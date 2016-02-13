@@ -7,8 +7,10 @@ module Menu
          This menu will help you use the Task List System
          1) Add
          2) Show 
-         3) Write to a File
-         4) Read from a File
+         3) Update
+         4) Delete
+         5) Write to a File
+         6) Read from a File
          Q) Quit"
 	end
 	
@@ -37,11 +39,6 @@ class List
 	def initialize
 		@all_tasks = []
 	end
-	
-	# Helper functions
-	def to_s
-        description
-    end
         
 	# Add task to list
 	def add(task)
@@ -54,12 +51,15 @@ class List
 	
 	#Show all tasks
 	def show
-		@all_tasks
+		@all_tasks.map.with_index { |l, i| 
+			"#{i.next}) #{l}\n"
+		}
 	end
 	
 	# Read a task from a file
+	# Read a task from a file
 	def read_from_file(filename)
-		IO.readline(filename).each{ |line|
+		IO.readlines(filename).each{ |line|
 			add(Task.new(line.chomp))
 		}
 	end
@@ -70,13 +70,13 @@ class List
 	end
 	
 	# Delete a task
-	def delete
-		
+	def delete(task_number)
+		@all_tasks.delete_at(task_number-1)
 	end
 	
 	# Update a task
-	def update
-		
+	def update(task_number, task)
+		@all_tasks[task_number-1] = task.description
 	end
 	
 end
@@ -87,16 +87,22 @@ end
 class Task
 	
 	attr_reader :description	
+	attr_accessor :status
 	
-	def initialize(description)
+	def initialize(description, status = false)
         @description = description
+        @status = status
     end
     
     def show
-	    @description
+	    "#{represent_status}:#{description}"
 	end
-          
 	
+	private
+	def represent_status
+		@status ? '[X]' : '[ ]'
+	end
+	          
 end
 
 if __FILE__ == $PROGRAM_NAME
@@ -110,9 +116,16 @@ if __FILE__ == $PROGRAM_NAME
 				my_list.add(Task.new(prompt('What is the task you would like to accomplish?')))
 			when '2', 'show'
 				puts my_list.show
-			when '3', 'write to a file'
+			when '3', 'update'
+				puts my_list.show
+				my_list.update(prompt('Which task would you like to update?').to_i, 
+                Task.new(prompt('New task name please?')))
+			when '4', 'delete'
+	            puts my_list.show
+				my_list.delete(prompt('Which task would you like to delete?').to_i)
+			when '5', 'write to a file'
 				my_list.write_to_file(prompt('Enter a file name'))
-			when '4', 'read from a file'
+			when '6', 'read from a file'
 				begin
 					my_list.read_from_file(prompt('Enter a file name'))
 				rescue Errno::ENOENT
