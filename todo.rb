@@ -11,6 +11,7 @@ module Menu
          4) Delete
          5) Write to a File
          6) Read from a File
+         7) Toggle Status
          Q) Quit"
 	end
 	
@@ -42,31 +43,32 @@ class List
         
 	# Add task to list
 	def add(task)
-		if task.is_a? Task
-			@all_tasks << task.description
-		else
+		begin
 			@all_tasks << task
+		rescue=>detail
+			puts detail.backtrace.join("\n")
 		end
 	end
 	
 	#Show all tasks
 	def show
 		@all_tasks.map.with_index { |l, i| 
-			"#{i.next}) #{l}\n"
+			"#{i.next}) #{l.display}\n"
 		}
 	end
 	
 	# Read a task from a file
-	# Read a task from a file
 	def read_from_file(filename)
 		IO.readlines(filename).each{ |line|
-			add(Task.new(line.chomp))
+			*description, status = line.split(':')
+			status = status.include?('X')
+			add(Task.new(description.join(':').strip, status))
 		}
 	end
 	
 	# Write a list to a file
 	def write_to_file(filename)
-        IO.write(filename, @all_tasks.map(&:to_s).join("\n"))
+        IO.write(filename, @all_tasks.map(&:display).join("\n"))
 	end
 	
 	# Delete a task
@@ -76,7 +78,12 @@ class List
 	
 	# Update a task
 	def update(task_number, task)
-		@all_tasks[task_number-1] = task.description
+		@all_tasks[task_number-1] = task
+	end
+	
+	# Toggle status
+	def toggle(task_number)
+		@all_tasks[task_number-1].toggle_status
 	end
 	
 end
@@ -94,8 +101,12 @@ class Task
         @status = status
     end
     
-    def show
-	    "#{represent_status}:#{description}"
+    def display
+	    "#{description} : #{represent_status}"
+	end
+	
+	def toggle_status
+		@status = !status
 	end
 	
 	private
@@ -131,6 +142,9 @@ if __FILE__ == $PROGRAM_NAME
 				rescue Errno::ENOENT
                     puts 'File name not found, please verify your file name and path.'
                 end
+            when '7', 'toggle status'
+            	puts my_list.show
+            	my_list.toggle(prompt('Which task would you change the status for').to_i)
 			else
 				puts 'Sorry, I did not understand?'
 		end
